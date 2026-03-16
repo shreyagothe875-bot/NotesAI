@@ -22,10 +22,7 @@ export async function processLectureContent(
   fileData?: { data: string; mimeType: string }
 ): Promise<SummaryResult> {
   // Using 1.5-flash because it's the most stable for JSON output
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
-  });
-
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   const systemPrompt = `
     You are an Academic Architect. Transform input into structured study materials.
     YOU MUST RETURN ONLY A RAW JSON OBJECT. DO NOT INCLUDE MARKDOWN BLOCKS OR TEXT OUTSIDE THE JSON.
