@@ -23,7 +23,7 @@ export async function processLectureContent(
 ): Promise<SummaryResult> {
   // Using 1.5-flash because it's the most stable for JSON output
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
+    model: "gemini-1.5-pro",
   });
 
   const systemPrompt = `

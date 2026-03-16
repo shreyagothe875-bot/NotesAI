@@ -765,7 +765,7 @@ function PomodoroTimer({ pomodoro }: { pomodoro: SummaryResult['pomodoro'] }) {
   const [timeLeft, setTimeLeft] = useState(pomodoro.workMinutes * 60);
   const [isActive, setIsActive] = useState(false);
   const [isWorkSession, setIsWorkSession] = useState(true);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (isActive && timeLeft > 0) {
@@ -880,4 +880,4 @@ function PomodoroTimer({ pomodoro }: { pomodoro: SummaryResult['pomodoro'] }) {
       </div>
     </div>
   );
-}
+} 
