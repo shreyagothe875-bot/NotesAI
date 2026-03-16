@@ -170,27 +170,34 @@ function AppContent() {
     }
   };
 
-  const handleDownloadPDF = async () => {
-    if (!summaryRef.current || !currentResult) return;
+  const handleDownloadPDF = () => {
+    if (!currentResult) return;
     setIsExporting(true);
-    try {
-      const element = summaryRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#050505',
-        logging: false
-      });
 
-      const imgData = canvas.toDataURL('image/png');
+    try {
+      // Create a new real PDF document
       const pdf = new jsPDF({
         orientation: 'portrait',
-        unit: 'px',
-        format: [canvas.width, canvas.height]
+        unit: 'mm',
+        format: 'a4'
       });
 
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-      pdf.save(`NotesAI_Summary_${currentResult.summary.slice(0, 20).replace(/\s+/g, '_')}.pdf`);
+      // Add a nice title at the top
+      pdf.setFontSize(16);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("NotesAI Smart Summary", 20, 20);
+
+      // Add the actual summary text
+      pdf.setFontSize(11);
+      pdf.setFont("helvetica", "normal");
+
+      // This magically wraps the text so it doesn't run off the page!
+      const textLines = pdf.splitTextToSize(currentResult.summary, 170);
+      pdf.text(textLines, 20, 30);
+
+      // Save the file cleanly
+      pdf.save("NotesAI_Summary.pdf");
+
     } catch (err) {
       console.error('PDF export failed:', err);
     } finally {
