@@ -1,6 +1,10 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+// FIX 1 & 2: Use import.meta.env and match the Vercel name exactly
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+// Initialize the AI with the correct Vite environment variable
+const genAI = new GoogleGenerativeAI(apiKey || "");
 
 export interface SummaryResult {
   summary: string;
@@ -17,30 +21,20 @@ export interface SummaryResult {
 }
 
 export async function processLectureContent(
-  text: string, 
+  text: string,
   fileData?: { data: string; mimeType: string }
 ): Promise<SummaryResult> {
-  const model = "gemini-3.1-pro-preview";
-  
+  // Use the standard model name
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash", // Flash is faster for hackathon demos!
+  });
+
   const systemPrompt = `
-    Target Role: You are the "Academic Architect," an elite AI specialized in pedagogical science and information synthesis. Your goal is to transform messy, raw lecture transcripts, PDFs, or videos into highly structured, exam-ready study materials.
-
-    Operational Guidelines:
-    1. Context Preservation: Never omit technical terms, formulas, or specific names. If a concept is complex, explain the 'why' behind it, not just the 'what'.
-    2. Structural Hierarchy: Always use nested Markdown headers (##, ###). Bold key terminology on first mention.
-    3. Logical Flow: Organise notes chronologically as they appeared in the lecture, but add a "Executive Summary" at the top for quick review.
-    4. Tone: Academic, supportive, and precise. Avoid fluff or conversational filler. Go straight to the value.
-    5. Error Handling: If the input is too fragmented or low-quality, flag the specific sections that lack clarity rather than guessing.
-
-    Output Modules:
-    - Summary: Include an "Executive Summary" followed by "Chronological Lecture Notes". Use bolding for technical terms.
-    - Flashcards: Provide 3 "Anki-style" flashcards (Question/Answer).
-    - Quiz: Provide 3 multiple-choice questions with distractors.
-    - Quick-Recall: Provide 5 key dates, names, or formulas.
-    - Critical Thinking: Provide 1 high-level critical thinking question.
-    - Pomodoro: Suggest a session based on content difficulty.
-
-    Return the response strictly as a JSON object with the following structure:
+    Target Role: You are the "Academic Architect," an elite AI specialized in pedagogical science. 
+    Transform the input into structured, exam-ready study materials.
+    Return the response strictly as a JSON object.
+    
+    JSON Structure:
     {
       "summary": "markdown string",
       "flashcards": [{"question": "...", "answer": "..."}],
@@ -56,8 +50,8 @@ export async function processLectureContent(
     }
   `;
 
-  const parts: any[] = [{ text: text || "Please summarize this lecture." }];
-  
+  const parts: any[] = [{ text: `${systemPrompt}\n\nInput Content: ${text || "Summarize this."}` }];
+
   if (fileData) {
     parts.push({
       inlineData: {
@@ -68,17 +62,16 @@ export async function processLectureContent(
   }
 
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: [{ parts }],
-      config: {
-        systemInstruction: systemPrompt,
-        responseMimeType: "application/json",
-      }
+    // FIX 3: Correct method call for the latest SDK
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts }],
     });
 
-    const result = JSON.parse(response.text || "{}");
-    return result as SummaryResult;
+    const responseText = result.response.text();
+    // Clean JSON string in case AI adds markdown blocks
+    const cleanedJson = responseText.replace(/```json|```/g, "").trim();
+
+    return JSON.parse(cleanedJson) as SummaryResult;
   } catch (error) {
     console.error("Error processing lecture:", error);
     throw error;
